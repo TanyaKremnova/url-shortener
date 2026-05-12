@@ -1,0 +1,31 @@
+MY_NOTES.md
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/url-shortener
+/bin/
+
+# Go build cache
+*.test
+*.out
+/vendor/
+
+# Environment variables
+.env
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Docker volumes (if mounted locally)
+pgdata/
+
+# Air (Go live-reload tool, optional)
+tmp/
