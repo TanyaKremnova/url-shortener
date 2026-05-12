@@ -24,7 +24,7 @@ MY_NOTES.md
 *.swo
 .DS_Store
 
-# Docker volumes (if mounted locally)
+# Docker volumes
 pgdata/
 
 # Air (Go live-reload tool, optional)
