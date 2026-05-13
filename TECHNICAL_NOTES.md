@@ -569,6 +569,86 @@ curl http://localhost:8080/doesnotexist
 
 # 🎫 Ticket 8 — Stats Endpoint
 
+### Why read user_id from the JWT context and not from the request?
+
+If the client send their own user_id, anyone could send user_id=someone_else and see their stats. The JWT is signed by your server — it can't be faked. Always get identity from the token.
+
+Tests
+```bash
+# Get a token:
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@test.com", "password": "password123"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# Create a couple of URLs:
+curl -s -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"original_url": "https://www.github.com"}'
+
+curl -s -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"original_url": "https://www.google.com"}'
+
+# Repeat several times
+curl -L http://localhost:8080/xK3mPq
+curl -L http://localhost:8080/xK3mPq
+curl -L http://localhost:8080/xK3mPq
+
+# Check stats:
+curl http://localhost:8080/admin/urls/stats \
+  -H "Authorization: Bearer $TOKEN"
+
+# Expected:
+# {
+#   "urls": [
+#     {
+#       "short_code": "xK3mPq",
+#       "original_url": "https://www.github.com",
+#       "click_count": 3,
+#       "created_at": "2024-..."
+#     },
+#     {
+#       "short_code": "aB2nPx",
+#       "original_url": "https://www.google.com",
+#       "click_count": 0,
+#       "created_at": "2024-..."
+#     }
+#   ],
+#   "total": 2
+# }
+```
+
+```bash
+# Test without token
+
+curl http://localhost:8080/admin/urls/stats
+
+# {"error":"authorization header required"}
+# HTTP 401
+```
+
+```bash
+# Register second user
+curl -s -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "other@test.com", "password": "password123"}'
+
+# Login as second user
+TOKEN2=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "other@test.com", "password": "password123"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# Get stats — should return empty, not user 1's URLs
+curl http://localhost:8080/admin/urls/stats \
+  -H "Authorization: Bearer $TOKEN2"
+
+# {"urls":[],"total":0}
+```
+
 ***
 
 # 🎫 Ticket 9 — Error Handling + Validation

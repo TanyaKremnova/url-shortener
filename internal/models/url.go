@@ -22,3 +22,17 @@ type CreateURLResponse struct {
     ShortURL    string `json:"short_url"`
     OriginalURL string `json:"original_url"`
 }
+
+// Single URL stats returned to the user
+type URLStats struct {
+    ShortCode   string    `db:"short_code"   json:"short_code"`
+    OriginalURL string    `db:"original_url" json:"original_url"`
+    ClickCount  int       `db:"click_count"  json:"click_count"`
+    CreatedAt   time.Time `db:"created_at"   json:"created_at"`
+}
+
+// Response wrapping all URLs for a user
+type StatsResponse struct {
+    URLs  []URLStats `json:"urls"`
+    Total int        `json:"total"`
+}
