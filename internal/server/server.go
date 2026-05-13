@@ -16,20 +16,17 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
     })
 
     authHandler := handlers.NewAuthHandler(db)
+    urlHandler := handlers.NewURLHandler(db)
 
-    // Public routes
     authGroup := r.Group("/auth")
     {
         authGroup.POST("/register", authHandler.Register)
         authGroup.POST("/login", authHandler.Login)
     }
 
-    // Protected routes — middleware runs before every handler in these groups
     urls := r.Group("/urls", auth.Middleware())
     {
-        urls.POST("/", func(c *gin.Context) {
-            c.JSON(501, gin.H{"message": "not implemented"})
-        })
+        urls.POST("/", urlHandler.CreateURL)
     }
 
     admin := r.Group("/admin", auth.Middleware())
@@ -39,7 +36,6 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
         })
     }
 
-    // Public — redirect
     r.GET("/:code", func(c *gin.Context) {
         c.JSON(501, gin.H{"message": "not implemented"})
     })

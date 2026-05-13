@@ -476,6 +476,54 @@ curl -X POST http://localhost:8080/urls/ \
 
 # 🎫 Ticket 6 — URL Shortening
 
+## crypto/rand vs math/rand
+
+In internal/service/shortener.go
+
+**Why crypto/rand and not math/rand?**
+
+**math/rand** is predictable if you know the seed — an attacker could guess your short codes.
+
+**crypto/rand** uses the OS's secure random source. Always use it for anything security-sensitive.
+
+```bash
+# Get a token first:
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@test.com", "password": "password123"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# Create a short URL:
+curl -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"original_url": "https://www.google.com"}'
+
+# Expected:
+# {
+#   "short_code": "xK3mPq",
+#   "short_url": "http://localhost:8080/xK3mPq",
+#   "original_url": "https://www.google.com"
+# }
+```
+
+```bash
+curl -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -d '{"original_url": "https://www.google.com"}'
+# {"error":"authorization header required"}
+# HTTP 401
+```
+
+```bash
+curl -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"original_url": "not-a-url"}'
+  # {"error":"..."}
+# HTTP 400
+```
+
 ***
 
 # 🎫 Ticket 7 — Redirect
