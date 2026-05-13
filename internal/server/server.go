@@ -18,6 +18,7 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
     authHandler := handlers.NewAuthHandler(db)
     urlHandler := handlers.NewURLHandler(db)
     redirectHandler := handlers.NewRedirectHandler(db)
+    statsHandler := handlers.NewStatsHandler(db)
 
     authGroup := r.Group("/auth")
     {
@@ -32,9 +33,7 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
 
     admin := r.Group("/admin", auth.Middleware())
     {
-        admin.GET("/urls/stats", func(c *gin.Context) {
-            c.JSON(501, gin.H{"message": "not implemented"})
-        })
+        admin.GET("/urls/stats", statsHandler.GetStats)
     }
 
     r.GET("/:code", redirectHandler.Redirect)
