@@ -17,6 +17,7 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
 
     authHandler := handlers.NewAuthHandler(db)
     urlHandler := handlers.NewURLHandler(db)
+    redirectHandler := handlers.NewRedirectHandler(db)
 
     authGroup := r.Group("/auth")
     {
@@ -36,9 +37,7 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
         })
     }
 
-    r.GET("/:code", func(c *gin.Context) {
-        c.JSON(501, gin.H{"message": "not implemented"})
-    })
+    r.GET("/:code", redirectHandler.Redirect)
 
     return r
 }

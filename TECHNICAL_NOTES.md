@@ -476,16 +476,13 @@ curl -X POST http://localhost:8080/urls/ \
 
 # 🎫 Ticket 6 — URL Shortening
 
-## crypto/rand vs math/rand
+### Short code generation
+- Used `crypto/rand` over `math/rand` — cryptographically secure, not guessable
+- Base62 alphabet (a-z, A-Z, 0-9) = 62^6 = ~56 billion possible codes
+- Collision retry: up to 5 attempts, each collision is astronomically rare at small scale
+- At Bitly scale you would pre-generate codes or use a distributed counter
 
-In internal/service/shortener.go
-
-**Why crypto/rand and not math/rand?**
-
-**math/rand** is predictable if you know the seed — an attacker could guess your short codes.
-
-**crypto/rand** uses the OS's secure random source. Always use it for anything security-sensitive.
-
+Tests
 ```bash
 # Get a token first:
 TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
@@ -527,6 +524,46 @@ curl -X POST http://localhost:8080/urls/ \
 ***
 
 # 🎫 Ticket 7 — Redirect
+
+### Redirect
+- Used 302 (temporary) not 301 (permanent)
+- 301 is cached forever by browsers — click counter would never increment after first visit
+- Used UPDATE...RETURNING to increment and fetch in one atomic query
+- Avoids race condition where two simultaneous clicks both read the same count
+
+Tests
+```bash
+curl -X POST http://localhost:8080/urls/ \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"original_url": "https://www.github.com"}'
+
+# Note the short_code from the response, e.g. "xK3mPq"
+```
+
+```bash
+# Test redirect in terminal:
+
+curl -v http://localhost:8080/xK3mPq
+
+# Note the short_code from the response, e.g. "xK3mPq"
+# < HTTP/1.1 302 Found
+# < Location: https://www.github.com
+```
+
+```bash
+docker exec -it url_shortener_db psql -U postgres -d urlshortener \
+  -c "SELECT short_code, click_count FROM urls;"
+
+# click_count should be 1 (or more)
+```
+
+```bash
+curl http://localhost:8080/doesnotexist
+
+# {"error":"short url not found"}
+```
+
 
 ***
 
