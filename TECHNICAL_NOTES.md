@@ -4,13 +4,12 @@
 go mod init github.com/yourname/url-shortener
 ```
 
-### go.mod — The Manifest
-go.mod - as the blueprint. It is located at the root of your project and defines the module's path and its dependency requirements
+### go.mod
 
-It contains:
-- **Module Path**: The unique name of a module (often a URL like ://github.com).
-- **Go Version**: The minimum version of Go required for the module.
-- **Require Directives**: A list of direct and some indirect dependencies along with their specific semantic versions (e.g., v1.2.3).
+The go.mod file defines:
+- module name
+- Go version
+- dependencies
 
 ### go.sum - The Security Lock
 While go.mod says which version you need, **go.sum** ensures the code you download is exactly what you expect and hasn't been tampered with.
@@ -140,8 +139,86 @@ docker-compose up -d          # start fresh — SQL runs again
 # ⚠️ down -v deletes all data. Use it if migration SQL was changed.
 ```
 
+## Start Postgres
+```bash
+docker-compose up -d
+# ✅ Container url_shortener_db  Started
+docker ps
+docker logs url_shortener_db
+# database system is ready to accept connections
+```
+
+```bash
+# Connect to Postgres inside the container:
+docker exec -it url_shortener_db psql -U postgres -d url_shortener
+
+SELECT * FROM users;
+
+# Inside the Postgres shell. Run:
+\dt
+
+# Check the columns look right:
+\d users
+\d urls
+
+# Exit the shell:
+\q
+```
+***
 
 # 🎫 Ticket 2 — Database Connection + Config
+
+## Goal
+
+The goal of this ticket was to connect the Go application to PostgreSQL while keeping configuration separated from application logic.
+
+The application now:
+
+- loads configuration from environment variables
+- connects to PostgreSQL using sqlx
+- uses Dockerized PostgreSQL
+- initializes database connection pooling
+
+### Why Use Environment Variables
+
+Database credentials and application configuration should not be hardcoded inside the source code.
+
+Using environment variables provides:
+
+- safer configuration management
+- easier deployment to different environments
+- flexibility between local development and production
+
+Example:
+
+- local development may use localhost
+- production may use managed cloud databases
+
+The **.env** file is ignored by Git to avoid committing secrets.
+
+The **.env.example** file documents which variables are required without exposing real credentials.
+
+### Why Use sqlx Instead of database/sql
+
+Go's standard database/sql package is low-level and verbose.
+
+**sqlx** extends it with:
+
+- easier query helpers
+- automatic struct scanning
+- cleaner query handling
+
+### Why Docker Is Useful Here
+
+Docker provides a reproducible development environment.
+
+Instead of manually installing PostgreSQL locally, the database runs inside a container with:
+
+- fixed version
+- isolated environment
+- persistent storage through Docker volumes
+
+This makes onboarding and setup more predictable.
 
 ***
 
@@ -150,6 +227,170 @@ docker-compose up -d          # start fresh — SQL runs again
 ***
 
 # 🎫 Ticket 4 — Auth: Register + Login
+
+## Goal
+
+Implement user authentication using:
+
+- user registration
+- password hashing with bcrypt
+- JWT-based login authentication
+
+The API now allows users to:
+
+- create accounts securely
+- authenticate using email/password
+- receive signed JWT access tokens
+
+Tests:
+```bash
+curl http://localhost:8080/health
+# {"status":"ok"}
+```
+
+```bash
+curl -X POST http://localhost:8080/auth/register \
+-H "Content-Type: application/json" \
+-d '{
+  "email":"test@example.com",
+  "password":"supersecret"
+}'
+# HTTP 201 Created
+curl -X POST http://localhost:8080/auth/register \
+-H "Content-Type: application/json" \
+-d '{
+  "email":"test@example.com",
+  "password":"supersecret"
+}'
+# HTTP 409 Conflict
+```
+
+```bash
+curl -X POST http://localhost:8080/auth/register \
+-H "Content-Type: application/json" \
+-d '{}'
+# HTTP 400 Bad Request
+```
+
+```bash
+curl -X POST http://localhost:8080/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+  "email":"test@example.com",
+  "password":"supersecret"
+}'
+# HTTP 200 OK
+```
+
+```bash
+curl -X POST http://localhost:8080/auth/login \
+-H "Content-Type: application/json" \
+-d '{
+  "email":"test@example.com",
+  "password":"wrongpassword"
+}'
+# HTTP 401 Unauthorized
+```
+
+## Why Passwords Must Be Hashed
+
+Passwords should never be stored in plain text.
+
+If a database leak happens and passwords are unhashed:
+
+- every user account becomes compromised immediately
+
+bcrypt hashes passwords before storing them.
+
+bcrypt also automatically includes:
+
+- salt
+- configurable computational cost
+
+This makes brute-force attacks significantly harder.
+
+## What Is Salt
+
+A salt is random data added to a password before hashing.
+
+Without salt:
+
+- identical passwords produce identical hashes
+
+With salt:
+
+- same passwords generate different hashes
+
+This protects against rainbow table attacks.
+
+bcrypt automatically handles salt generation internally.
+
+## Why bcrypt.CompareHashAndPassword Is Important
+
+Password comparison should be timing-safe.
+
+Simple string comparison can leak timing information and theoretically help attackers.
+
+bcrypt.CompareHashAndPassword performs secure hash verification designed for authentication systems.
+
+## What Is JWT
+
+JWT (JSON Web Token) is a signed authentication token.
+
+A JWT contains:
+
+- header
+- payload
+- signature
+
+Example payload:
+
+- user ID
+- expiration timestamp (exp)
+
+The signature prevents token tampering.
+
+## Stateless Authentication
+
+JWT authentication is stateless.
+
+The server does not store session state in memory or database tables.
+
+Instead:
+
+- client stores token
+- token is sent with requests
+- server validates signature
+
+Benefits:
+
+- simpler horizontal scaling
+- no session storage needed
+- useful for APIs and microservices
+
+Tradeoffs:
+
+- harder token revocation
+- logout is less straightforward
+- token expiration strategy becomes important
+
+## HTTP Status Codes Used
+### 200 OK
+### 201 Created
+
+Used when a new user account is successfully created.
+
+### 400 Bad Request
+
+Used when request input is invalid or malformed.
+
+### 401 Unauthorized
+
+Used when login credentials are invalid.
+
+### 409 Conflict
+
+Used when trying to register an email that already exists.
 
 ***
 
