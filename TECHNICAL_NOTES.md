@@ -396,6 +396,61 @@ Used when trying to register an email that already exists.
 
 # 🎫 Ticket 5 — Auth Middleware
 
+## What Is Middleware
+
+Middleware is a function that executes before the main route handler.
+
+It is commonly used for:
+
+- authentication
+- logging
+- rate limiting
+- request validation
+
+Middleware can:
+
+- stop the request
+- modify the request context
+- pass control to the next handler
+
+## JWT Authentication Middleware
+
+The authentication middleware:
+
+- reads the Authorization header
+- extracts the Bearer token
+- validates the JWT signature and expiration
+- rejects invalid or missing tokens
+
+If validation succeeds:
+
+- the authenticated user_id is stored in the request context
+
+Downstream handlers can then access the authenticated user without re-validating the token.
+
+## 401 Unauthorized
+
+Used when:
+
+- token is missing
+- token is invalid
+- authentication failed
+
+Meaning:
+
+"You are not authenticated."
+
+## 403 Forbidden
+
+Used when:
+
+- user is authenticated
+- but does not have permission
+
+Meaning:
+
+"You are authenticated, but not allowed to access this resource."
+
 Tests:
 ```bash
 curl -X POST http://localhost:8080/urls/
