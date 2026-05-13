@@ -6,6 +6,8 @@ import (
 
     "github.com/gin-gonic/gin"
     "github.com/jmoiron/sqlx"
+
+    "github.com/TanyaKremnova/url-shortener/internal/utils"
 )
 
 type RedirectHandler struct {
@@ -19,8 +21,6 @@ func NewRedirectHandler(db *sqlx.DB) *RedirectHandler {
 func (h *RedirectHandler) Redirect(c *gin.Context) {
     code := c.Param("code")
 
-    // Look up original URL and increment click count atomically in one query
-    // This is safer than SELECT then UPDATE separately (avoids race conditions)
     var originalURL string
     query := `
         UPDATE urls
@@ -31,14 +31,12 @@ func (h *RedirectHandler) Redirect(c *gin.Context) {
     err := h.DB.QueryRowx(query, code).Scan(&originalURL)
     if err != nil {
         if err == sql.ErrNoRows {
-            c.JSON(http.StatusNotFound, gin.H{"error": "short url not found"})
+            utils.ErrorResponse(c, http.StatusNotFound, "short url not found")
             return
         }
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "something went wrong"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "something went wrong")
         return
     }
 
-    // 302 = temporary redirect
-    // NOT 301 — browsers cache 301 permanently, which would break our click counter
     c.Redirect(http.StatusFound, originalURL)
 }

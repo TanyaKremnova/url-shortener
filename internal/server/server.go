@@ -6,10 +6,13 @@ import (
 
     "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/handlers"
+    "github.com/TanyaKremnova/url-shortener/internal/middleware"
 )
 
 func NewRouter(db *sqlx.DB) *gin.Engine {
-    r := gin.Default()
+    r := gin.New()
+    r.Use(gin.Logger())
+    r.Use(middleware.Recovery())
 
     r.GET("/health", func(c *gin.Context) {
         c.JSON(200, gin.H{"status": "ok"})

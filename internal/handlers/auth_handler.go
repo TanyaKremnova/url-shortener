@@ -5,10 +5,12 @@ import (
 
     "github.com/gin-gonic/gin"
     "github.com/jmoiron/sqlx"
+    "github.com/lib/pq"
     "golang.org/x/crypto/bcrypt"
 
     "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/models"
+    "github.com/TanyaKremnova/url-shortener/internal/utils"
 )
 
 type AuthHandler struct {
@@ -24,14 +26,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
     // Validate request body
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
         return
     }
 
     // Hash password — never store plain text
     hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not hash password"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not hash password")
         return
     }
 
@@ -44,30 +46,29 @@ func (h *AuthHandler) Register(c *gin.Context) {
     `
     err = h.DB.QueryRowx(query, req.Email, string(hash)).Scan(&userID)
     if err != nil {
-        // Postgres unique violation code = 23505
-        if err.Error() != "" {
-            c.JSON(http.StatusConflict, gin.H{"error": "email already registered"})
+        if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+            utils.ErrorResponse(c, http.StatusConflict, "email already registered")
             return
         }
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create user"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not create user")
         return
     }
 
     // Generate token right away so user is logged in after register
     token, err := auth.GenerateToken(userID)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not generate token")
         return
     }
 
-    c.JSON(http.StatusCreated, models.AuthResponse{Token: token})
+    utils.SuccessResponse(c, http.StatusCreated, models.AuthResponse{Token: token})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
     var req models.LoginRequest
 
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
         return
     }
 
@@ -75,23 +76,21 @@ func (h *AuthHandler) Login(c *gin.Context) {
     var user models.User
     err := h.DB.Get(&user, "SELECT * FROM users WHERE email = $1", req.Email)
     if err != nil {
-        // Don't say "email not found" — always give the same message
-        // so attackers can't enumerate valid emails
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+        utils.ErrorResponse(c, http.StatusUnauthorized, "invalid credentials")
         return
     }
 
     // Compare password with hash
     if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+        utils.ErrorResponse(c, http.StatusUnauthorized, "invalid credentials")
         return
     }
 
     token, err := auth.GenerateToken(user.ID)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not generate token")
         return
     }
 
-    c.JSON(http.StatusOK, models.AuthResponse{Token: token})
+    utils.SuccessResponse(c, http.StatusOK, models.AuthResponse{Token: token})
 }

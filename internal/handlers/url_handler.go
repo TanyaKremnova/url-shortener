@@ -12,6 +12,7 @@ import (
     "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/models"
     "github.com/TanyaKremnova/url-shortener/internal/service"
+    "github.com/TanyaKremnova/url-shortener/internal/utils"
 )
 
 type URLHandler struct {
@@ -23,17 +24,23 @@ func NewURLHandler(db *sqlx.DB) *URLHandler {
 }
 
 func (h *URLHandler) CreateURL(c *gin.Context) {
-    // Get user_id from context — middleware already validated the token
+    // Get user_id from context
     userID, exists := c.Get(auth.UserIDKey)
     if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
         return
     }
 
     // Validate request body
     var req models.CreateURLRequest
     if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    // Extra URL safety check
+    if !utils.IsValidURL(req.OriginalURL) {
+        utils.ErrorResponse(c, http.StatusBadRequest, "invalid url: must start with http:// or https://")
         return
     }
 
@@ -45,7 +52,7 @@ func (h *URLHandler) CreateURL(c *gin.Context) {
     for attempts := 0; attempts < 5; attempts++ {
         code, err := service.GenerateShortCode()
         if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate short code"})
+            utils.ErrorResponse(c, http.StatusInternalServerError, "could not generate short code")
             return
         }
 
@@ -65,17 +72,17 @@ func (h *URLHandler) CreateURL(c *gin.Context) {
         }
 
         // Any other DB error
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not save url"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not save url")
         return
     }
 
     if insertErr != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate unique code"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not generate unique code")
         return
     }
 
     baseURL := os.Getenv("APP_BASE_URL")
-    c.JSON(http.StatusCreated, models.CreateURLResponse{
+    utils.SuccessResponse(c, http.StatusCreated, models.CreateURLResponse{
         ShortCode:   shortCode,
         ShortURL:    fmt.Sprintf("%s/%s", baseURL, shortCode),
         OriginalURL: req.OriginalURL,

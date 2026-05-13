@@ -8,6 +8,7 @@ import (
 
     "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/models"
+    "github.com/TanyaKremnova/url-shortener/internal/utils"
 )
 
 type StatsHandler struct {
@@ -20,11 +21,11 @@ func NewStatsHandler(db *sqlx.DB) *StatsHandler {
 
 func (h *StatsHandler) GetStats(c *gin.Context) {
     // Read user_id from context — set by JWT middleware
-    // We NEVER take user_id from the request body or query params
+    // NEVER take user_id from the request body or query params
     // Always trust the token, never the client
     userID, exists := c.Get(auth.UserIDKey)
     if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+        utils.ErrorResponse(c, http.StatusUnauthorized, "unauthorized")
         return
     }
 
@@ -38,7 +39,7 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
     `
     err := h.DB.Select(&urls, query, userID)
     if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "could not fetch stats"})
+        utils.ErrorResponse(c, http.StatusInternalServerError, "could not fetch stats")
         return
     }
 
@@ -47,7 +48,7 @@ func (h *StatsHandler) GetStats(c *gin.Context) {
         urls = []models.URLStats{}
     }
 
-    c.JSON(http.StatusOK, models.StatsResponse{
+    utils.SuccessResponse(c, http.StatusOK, models.StatsResponse{
         URLs:  urls,
         Total: len(urls),
     })
