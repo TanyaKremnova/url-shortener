@@ -3,27 +3,23 @@ package server
 import (
     "github.com/gin-gonic/gin"
     "github.com/jmoiron/sqlx"
+
+    "github.com/TanyaKremnova/url-shortener/internal/handlers"
 )
 
 func NewRouter(db *sqlx.DB) *gin.Engine {
     r := gin.Default()
 
-    // Health check — always useful, mentor will like this
     r.GET("/health", func(c *gin.Context) {
-        c.JSON(200, gin.H{
-            "status": "ok",
-        })
+        c.JSON(200, gin.H{"status": "ok"})
     })
 
-    // Route groups — stubs for now, handlers come in later tickets
+    authHandler := handlers.NewAuthHandler(db)
+
     auth := r.Group("/auth")
     {
-        auth.POST("/register", func(c *gin.Context) {
-            c.JSON(501, gin.H{"message": "not implemented"})
-        })
-        auth.POST("/login", func(c *gin.Context) {
-            c.JSON(501, gin.H{"message": "not implemented"})
-        })
+        auth.POST("/register", authHandler.Register)
+        auth.POST("/login", authHandler.Login)
     }
 
     urls := r.Group("/urls")
@@ -40,7 +36,6 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
         })
     }
 
-    // Redirect — must be last, catches /:code
     r.GET("/:code", func(c *gin.Context) {
         c.JSON(501, gin.H{"message": "not implemented"})
     })
