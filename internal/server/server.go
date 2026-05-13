@@ -4,6 +4,7 @@ import (
     "github.com/gin-gonic/gin"
     "github.com/jmoiron/sqlx"
 
+    "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/handlers"
 )
 
@@ -16,26 +17,29 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
 
     authHandler := handlers.NewAuthHandler(db)
 
-    auth := r.Group("/auth")
+    // Public routes
+    authGroup := r.Group("/auth")
     {
-        auth.POST("/register", authHandler.Register)
-        auth.POST("/login", authHandler.Login)
+        authGroup.POST("/register", authHandler.Register)
+        authGroup.POST("/login", authHandler.Login)
     }
 
-    urls := r.Group("/urls")
+    // Protected routes — middleware runs before every handler in these groups
+    urls := r.Group("/urls", auth.Middleware())
     {
         urls.POST("/", func(c *gin.Context) {
             c.JSON(501, gin.H{"message": "not implemented"})
         })
     }
 
-    admin := r.Group("/admin")
+    admin := r.Group("/admin", auth.Middleware())
     {
         admin.GET("/urls/stats", func(c *gin.Context) {
             c.JSON(501, gin.H{"message": "not implemented"})
         })
     }
 
+    // Public — redirect
     r.GET("/:code", func(c *gin.Context) {
         c.JSON(501, gin.H{"message": "not implemented"})
     })

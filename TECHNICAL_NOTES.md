@@ -396,6 +396,27 @@ Used when trying to register an email that already exists.
 
 # 🎫 Ticket 5 — Auth Middleware
 
+Tests:
+```bash
+curl -X POST http://localhost:8080/urls/
+# HTTP 401
+```
+
+```bash
+# First get a token
+TOKEN=$(curl -s -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@test.com", "password": "password123"}' \
+  | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+# Then use it
+curl -X POST http://localhost:8080/urls/ \
+  -H "Authorization: Bearer $TOKEN"
+
+# {"message":"not implemented"}  ← middleware passed! ✅
+# HTTP 501
+```
+
 ***
 
 # 🎫 Ticket 6 — URL Shortening
