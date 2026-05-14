@@ -13,7 +13,7 @@ type URL struct {
 
 // Accept from the request body
 type CreateURLRequest struct {
-    OriginalURL string `json:"original_url" binding:"required,url"`
+    OriginalURL string `json:"original_url" binding:"required"`
 }
 
 // Send back
