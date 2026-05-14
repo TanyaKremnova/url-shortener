@@ -4,6 +4,8 @@ A backend REST API that shortens URLs. Built with Go, PostgreSQL, and Docker.
 
 Registered users can create short links, share them, and see how many times each link was clicked.
 
+This project was developed as part of a backend mentorship/take-home style exercise focused on API design, authentication, PostgreSQL, and backend architecture.
+
 ---
 
 ## Tech Stack
