@@ -20,7 +20,9 @@ func main() {
     db := database.Connect(cfg.DatabaseURL)
     defer db.Close()
 
-    r := server.NewRouter(db)
+    c := cache.New(cfg.CacheURL)
+
+    r := server.NewRouter(db, c)
 
     log.Printf("🚀 Server running on port %s", cfg.AppPort)
     if err := r.Run(":" + cfg.AppPort); err != nil {
