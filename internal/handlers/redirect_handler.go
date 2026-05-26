@@ -41,8 +41,20 @@ func (h *RedirectHandler) Redirect(c *gin.Context) {
 
     // 1. Check cache first
     if originalURL, err := h.Cache.Get(ctx, code); err == nil {
+
         // Cache hit — no DB query needed
-        go h.incrementClickCount(code) //TODO explain concurrency usage
+        go func(shortCode string) {
+            _, err := h.DB.Exec(
+                `UPDATE urls 
+                SET click_count = click_count + 1 
+                WHERE short_code = $1`,
+                shortCode,
+            )
+            if err != nil {
+                log.Printf("failed to increment click count for %s: %v", shortCode, err)
+            }
+        }(code)
+
         c.Redirect(http.StatusFound, originalURL)
         return
     }

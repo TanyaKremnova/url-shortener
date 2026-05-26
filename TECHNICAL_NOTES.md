@@ -313,7 +313,6 @@ Improve redirect performance by introducing a caching layer.
 Redirect requests should first check cache, and only query PostgreSQL if the data is not available in cache.
 
 #### What I implemented
-
 * Added Redis service in docker-compose.yml
 * Implemented internal/cache/redis.go
   - Get(code) → returns cached original URL
@@ -327,6 +326,21 @@ Redirect requests should first check cache, and only query PostgreSQL if the dat
 * Added TTL (24h) for cache entries
 
 ---
+
+## 🎫 Ticket 11 — Goroutines
+
+### Goal
+Make redirect faster by moving database update to background execution.
+
+#### What I implemented
+* Used go func() to run click counter update asynchronously
+* Removed blocking DB call from redirect path
+* Passed only short_code into goroutine (no shared request context)
+* Logged errors inside goroutine for debugging
+
+---
+
+
 
 ## End-to-End Test
 
