@@ -3,6 +3,7 @@ package handlers
 import (
     "database/sql"
     "net/http"
+    "log"
 
     "github.com/gin-gonic/gin"
     "github.com/jmoiron/sqlx"
@@ -12,7 +13,7 @@ import (
 )
 
 type RedirectHandler struct {
-    DB *sqlx.DB
+    DB    *sqlx.DB
     Cache *cache.Cache
 }
 

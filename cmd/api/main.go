@@ -6,6 +6,7 @@ import (
     "github.com/TanyaKremnova/url-shortener/internal/config"
     "github.com/TanyaKremnova/url-shortener/internal/database"
     "github.com/TanyaKremnova/url-shortener/internal/server"
+    "github.com/TanyaKremnova/url-shortener/internal/cache"
 )
 
 func main() {
