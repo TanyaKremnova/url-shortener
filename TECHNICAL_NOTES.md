@@ -306,6 +306,42 @@ Store every redirect event separately with timestamp and metadata instead of onl
 
 ---
 
+## 🎫 Ticket 10 — Redis/Valkey Cache
+
+### Goal
+Improve redirect performance by introducing a caching layer.
+Redirect requests should first check cache, and only query PostgreSQL if the data is not available in cache.
+
+#### What I implemented
+* Added Redis service in docker-compose.yml
+* Implemented internal/cache/redis.go
+  - Get(code) → returns cached original URL
+  - Set(code, url) → stores URL in cache with TTL
+  - Delete(code) → removes cached entry (for future delete feature)
+* Updated redirect handler logic:
+  - Check cache first
+  - If cache hit → redirect immediately (no DB query)
+  - If cache miss → query PostgreSQL
+  - Store result in cache for future requests
+* Added TTL (24h) for cache entries
+
+---
+
+## 🎫 Ticket 11 — Goroutines
+
+### Goal
+Make redirect faster by moving database update to background execution.
+
+#### What I implemented
+* Used go func() to run click counter update asynchronously
+* Removed blocking DB call from redirect path
+* Passed only short_code into goroutine (no shared request context)
+* Logged errors inside goroutine for debugging
+
+---
+
+
+
 ## End-to-End Test
 
 Full test of every feature from zero, using only `curl` in the terminal.

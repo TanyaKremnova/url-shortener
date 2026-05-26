@@ -22,5 +22,20 @@ services:
       timeout: 5s
       retries: 5
 
+
+  redis:
+    image: redis:7
+    container_name: url_shortener_cache
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
 volumes:
   pgdata:

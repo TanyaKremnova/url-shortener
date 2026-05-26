@@ -7,9 +7,10 @@ import (
     "github.com/TanyaKremnova/url-shortener/internal/auth"
     "github.com/TanyaKremnova/url-shortener/internal/handlers"
     "github.com/TanyaKremnova/url-shortener/internal/middleware"
+    "github.com/TanyaKremnova/url-shortener/internal/cache"
 )
 
-func NewRouter(db *sqlx.DB) *gin.Engine {
+func NewRouter(db *sqlx.DB, c *cache.Cache) *gin.Engine {
     r := gin.New()
     r.Use(gin.Logger())
     r.Use(middleware.Recovery())
@@ -20,7 +21,7 @@ func NewRouter(db *sqlx.DB) *gin.Engine {
 
     authHandler := handlers.NewAuthHandler(db)
     urlHandler := handlers.NewURLHandler(db)
-    redirectHandler := handlers.NewRedirectHandler(db)
+    redirectHandler := handlers.NewRedirectHandler(db, c)
     statsHandler := handlers.NewStatsHandler(db)
 
     authGroup := r.Group("/auth")

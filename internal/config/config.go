@@ -12,6 +12,7 @@ type Config struct {
     AppPort     string
     JWTSecret   string
     AppBaseURL  string
+    CacheURL    string
 }
 
 func Load() *Config {
@@ -24,5 +25,6 @@ func Load() *Config {
         AppPort:     os.Getenv("APP_PORT"),
         JWTSecret:   os.Getenv("JWT_SECRET"),
         AppBaseURL:  os.Getenv("APP_BASE_URL"),
+        CacheURL:    os.Getenv("CACHE_URL"),
     }
 }
