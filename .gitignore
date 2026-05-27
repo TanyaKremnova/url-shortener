@@ -1,5 +1,8 @@
 MY_NOTES.md
 
+__pycache__/
+*.pyc
+
 # Binaries
 *.exe
 *.exe~
