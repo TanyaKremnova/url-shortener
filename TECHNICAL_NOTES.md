@@ -340,7 +340,46 @@ Make redirect faster by moving database update to background execution.
 
 ---
 
+## Ticket 12 — Nginx Load Balancer
 
+### Goal
+Run two instances of the Go app behind Nginx so traffic is distributed and the system survives one instance going down.
+
+#### What is a reverse proxy?
+Nginx sits in front of the app instances. Clients talk to Nginx, never directly to the app. Nginx forwards the request to one of the app instances and returns the response.
+
+```bash
+Client → Nginx (port 80) → app1 (port 8080)
+                         → app2 (port 8080)
+```
+
+#### What is load balancing?
+Nginx distributes requests across the app instances. The default strategy is round-robin — request 1 goes to app1, request 2 goes to app2, request 3 goes to app1, and so on. This was verified by watching the logs:
+
+```bash
+app2 ← request 1
+app1 ← request 2
+app2 ← request 3
+app1 ← request 4
+```
+
+## Ticket 13 — Load Testing with Locust
+
+### Goal
+Simulate real traffic to measure how the API performs under load and find bottlenecks.
+
+### What is Locust?
+Locust is a Python tool that simulates many users sending requests at the same time. You write a Python script describing what a user does, then Locust spawns hundreds of those users and measures how the server responds.
+
+## Ticket 15 — Unit Tests
+
+### Goal
+Verify that individual functions and handlers behave correctly in isolation, without a real database or Redis.
+
+#### What is a unit test?
+A unit test checks one small piece of code — one function, one handler — in isolation. It does not need the whole system running. Fast, reliable, runs anywhere.
+
+---
 
 ## End-to-End Test
 
