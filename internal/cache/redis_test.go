@@ -1,3 +1,7 @@
+// This test needs a real Redis running. 
+// Run it with docker-compose up -d first,
+// then go test ./internal/cache/...
+
 package cache
 
 import (
@@ -7,14 +11,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func setupTestCache() *Cache {
+func setupTestCache() *RedisCache {
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
 
-	return &Cache{
-		client: client,
-	}
+	return &RedisCache{client: client}
 }
 
 func TestCache_SetAndGet(t *testing.T) {

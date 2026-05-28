@@ -10,7 +10,7 @@ import (
     "github.com/TanyaKremnova/url-shortener/internal/cache"
 )
 
-func NewRouter(db *sqlx.DB, c *cache.Cache) *gin.Engine {
+func NewRouter(db *sqlx.DB, c cache.Cache) *gin.Engine {
     r := gin.New()
     r.Use(gin.Logger())
     r.Use(middleware.Recovery())

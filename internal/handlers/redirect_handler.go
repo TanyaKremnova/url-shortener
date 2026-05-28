@@ -14,25 +14,14 @@ import (
 
 type RedirectHandler struct {
     DB    *sqlx.DB
-    Cache *cache.Cache
+    Cache cache.Cache
 }
 
-func NewRedirectHandler(db *sqlx.DB, cache *cache.Cache) *RedirectHandler {
+func NewRedirectHandler(db *sqlx.DB, c cache.Cache) *RedirectHandler {
     return &RedirectHandler{
-        DB:     db,
-        Cache:  cache,}
-}
-
-func (h *RedirectHandler) incrementClickCount(code string) {
-    query := `
-        UPDATE urls
-        SET click_count = click_count + 1
-        WHERE short_code = $1
-    `
-    if _, err := h.DB.Exec(query, code); err != nil {
-        log.Printf("failed to increment click count for %s: %v", code, err)
+        DB:    db,
+        Cache: c,
     }
-    h.DB.Exec(query, code)
 }
 
 func (h *RedirectHandler) Redirect(c *gin.Context) {
