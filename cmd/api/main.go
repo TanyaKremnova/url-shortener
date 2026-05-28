@@ -6,6 +6,7 @@ import (
     "github.com/TanyaKremnova/url-shortener/internal/config"
     "github.com/TanyaKremnova/url-shortener/internal/database"
     "github.com/TanyaKremnova/url-shortener/internal/server"
+    "github.com/TanyaKremnova/url-shortener/internal/cache"
 )
 
 func main() {
@@ -20,7 +21,9 @@ func main() {
     db := database.Connect(cfg.DatabaseURL)
     defer db.Close()
 
-    r := server.NewRouter(db)
+    c := cache.New(cfg.CacheURL)
+
+    r := server.NewRouter(db, c)
 
     log.Printf("🚀 Server running on port %s", cfg.AppPort)
     if err := r.Run(":" + cfg.AppPort); err != nil {
