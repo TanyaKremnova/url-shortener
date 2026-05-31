@@ -306,7 +306,7 @@ Store every redirect event separately with timestamp and metadata instead of onl
 
 ---
 
-## 🎫 Ticket 10 — Redis/Valkey Cache
+## 🎫 Ticket 10 — Redis Cache
 
 ### Goal
 Improve redirect performance by introducing a caching layer.
@@ -340,7 +340,7 @@ Make redirect faster by moving database update to background execution.
 
 ---
 
-## Ticket 12 — Nginx Load Balancer
+## 🎫 Ticket 12 — Nginx Load Balancer
 
 ### Goal
 Run two instances of the Go app behind Nginx so traffic is distributed and the system survives one instance going down.
@@ -363,7 +363,7 @@ app2 ← request 3
 app1 ← request 4
 ```
 
-## Ticket 13 — Load Testing with Locust
+## 🎫 Ticket 13 — Load Testing with Locust
 
 ### Goal
 Simulate real traffic to measure how the API performs under load and find bottlenecks.
@@ -371,7 +371,7 @@ Simulate real traffic to measure how the API performs under load and find bottle
 ### What is Locust?
 Locust is a Python tool that simulates many users sending requests at the same time. You write a Python script describing what a user does, then Locust spawns hundreds of those users and measures how the server responds.
 
-## Ticket 15 — Unit Tests
+## 🎫 Ticket 14 — Unit Tests
 
 ### Goal
 Verify that individual functions and handlers behave correctly in isolation, without a real database or Redis.
