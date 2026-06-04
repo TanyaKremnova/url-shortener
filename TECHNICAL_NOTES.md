@@ -513,3 +513,31 @@ curl -s http://localhost:8080/admin/urls/stats \
 curl -s http://localhost:8080/admin/urls/stats
 # {"code":401,"error":"authorization header required"}
 ```
+
+---
+
+## Useful Commands
+
+```bash
+# Stop database
+docker-compose down
+
+# Wipe database and start fresh (deletes all data)
+docker-compose down -v && docker-compose up -d
+# ⚠️ down -v deletes all data. Use it if migration SQL was changed.
+
+# Connect to database directly
+docker exec -it url_shortener_db psql -U postgres -d url_shortener
+
+SELECT * FROM users;
+
+# Inside the Postgres shell. Run:
+\dt
+
+# Check the columns look right:
+\d users
+\d urls
+
+# Exit the shell:
+\q
+```
