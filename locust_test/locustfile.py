@@ -24,7 +24,7 @@ class URLShortenerUser(HttpUser):
         data = response.json()
         self.token = data.get("data", {}).get("token")
 
-    @task(1)
+    @task(15)
     def create_url(self):
         if not self.token:
             return
@@ -41,7 +41,7 @@ class URLShortenerUser(HttpUser):
         except Exception:
             pass
 
-    @task(10)
+    @task(80)
     def redirect(self):
         # Redirects are 10x more frequent than creates — realistic ratio
         if not self.short_codes:
@@ -49,7 +49,7 @@ class URLShortenerUser(HttpUser):
         code = random.choice(self.short_codes)
         self.client.get(f"/{code}", allow_redirects=False)
 
-    @task(2)
+    @task(5)
     def get_stats(self):
         if not self.token:
             return
