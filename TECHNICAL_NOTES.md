@@ -366,7 +366,7 @@ app1 ← request 4
 ## 🎫 Ticket 13 — Load Testing with Locust
 
 ### Goal
-Simulate real traffic to measure how the API performs under load and find bottlenecks.
+Measure API performance under different loads, check reliability, and observe how response times change as the number of simulated users increases.
 
 ### What is Locust?
 Locust is a Python tool that simulates many users sending requests at the same time. You write a Python script describing what a user does, then Locust spawns hundreds of those users and measures how the server responds.
@@ -383,139 +383,46 @@ export PATH="$HOME/.local/bin:$PATH"
 locust -f ./locust_test/locustfile.py --host http://localhost:8080
 ```
 
-### Configure a Load Test
+### Key metrics
 On the Start new load test page, configure the following fields.
 
-| Field       | Meaning | Example |
-|-------------|---------|---------|
-| Number of users (peak concurrency) | Maximum number of simulated users active at the same time | 50 |
-| Ramp up (users started/second) | How quickly Locust starts adding simulated users | 5 |
-| Host | Base URL of the API | http://localhost:8080 |
-| Run time | How long the test runs, if the field is available | 2m |
+- **RPS (requests per second):** Number of HTTP requests handled per second
+- **Failure rate:** Percentage of requests reported as failed
+- **p50 (median):** Half of requests completed within this time
+- **p95:** 95% of requests completed within this time
+- **Average response time:** Mean response time across requests
 
-### Suggested Test Scenarios
-Start with a small test and increase the load gradually.
+### My test results
 
-| Scenario       | Users | Ramp up (users/s) | Duration | Purpose       |
-|----------------|------:|------------------:|----------|---------------|
-| Smoke test     |     5 |                 1 | 1 minute | Verify the test script and endpoints work |
-| Light load     |    20 |                 2 | 2 minute | Establish a baseline |
-| Moderate load  |    50 |                 5 | 3 minute | Test normal traffic |
-| Higher load    |   100 |                10 | 3-5 minute | Check performance at increased concurrency |
-| Fast ramp-up   |   100 |                50 | 2-3 minute | Observe the effect of adding users quickly |
-| Heavy load     |   200 |                20 | 3-5 minute | Check stability under heavier traffic |
-| Stress test    | 300, then 400, etc. | 20–50 | 3–5 min per level | Find the point where errors or latency increase significantly |
+| Test           | Users | Ramp up (users/s) |   Duration | Throughput | p95 | Failures |
+|----------------|------:|-------------:|------:|------------|-------:|---------:|
+| Moderate load  |    50 |            5 | 3 min | 152.37 RPS |  26 ms |       0% |
+| Higher load    |   100 |           10 | 3 min | 283.80 RPS | 110 ms |       0% |
+| Heavy load     |   200 |           20 | 3 min | 563.92 RPS | 130 ms |       0% |
 
-### The results are from the Fast ramp-up test
-- Users: 100
-- Spawn rate: 50 users/second
-- Duration: 3 minutes
-- Measured throughput: approximately 279 requests/second
-- Failures: 0
-- p95 response time: 160 ms
-
-### Moderate load test
-Metric	                    Result	  Interpretation
-Total requests	            27,386	  Requests handled during the test
-Failures	                  0 (0%)	  No reported request failures
-Throughput	                152.37    requests/sec	Overall request rate
-Median response time (p50)	7 ms	    Half of requests completed within 7 ms
-Average response time	      11.39 ms	Fast on average
-95th percentile (p95)	      26 ms   	95% completed within 26 ms
-99th percentile (p99)	      120 ms	  99% completed within 120 ms
-Maximum response time	      511 ms	  A few requests were slower
-
-### Higher load test
-Metric	                      Result
-Total requests	              50,872
-Failures	                    0 (0%)
-Throughput	                  283.80 requests/sec
-Median response time (p50)	  7 ms
-Average response time	        25.79 ms
-p90	                          63 ms
-p95	                          110 ms
-p99	                          360 ms
-Maximum response time	        523 ms
-
-### Fast ramp-up test
-Metric	                  Result	  Interpretation
-Total requests	          50,267	  Requests completed
-Failures	                0	        No requests failed
-Requests/second	          279     	Overall throughput
-Median response time	    7 ms    	Half of requests were this fast or faster
-Average response time	    37.7 ms	  Average across requests
-95th percentile (p95)	    160 ms	  95% completed within 160 ms
-Maximum response time	    2,371 ms	Slowest request took about 2.37 seconds
-
-### Alternatively use the terminal
-
-```bash
-# Create the output directory first
-mkdir -p results
-
-# Run a test and save its results
-locust -f ./locust_test/locustfile.py \
-  --host http://localhost:8080 \
-  --users 100 \
-  --spawn-rate 50 \
-  --run-time 3m \
-  --headless \
-  --csv=results/fast-ramp-up
-```
-## Measure one Go instance separately
-Temporary add in docker-compose.yml
-
-```YAML
-app1:
-  # Keep existing configuration
-  ports:
-    - "8081:8080"
-
-app2:
-  # Keep existing configuration
-  ports:
-    - "8082:8080"
-```
-
-```bash
-# Recreate the services:
-docker-compose up --build -d
-
-# Check that both instances respond
-curl -i http://localhost:8081/health
-curl -i http://localhost:8082/health
-
-# Run the creation test against app1:
-locust -f ./locust_test/create_url_locustfile.py \
-  --host http://localhost:8081
-
-# For a headless run:
-locust -f ./locust_test/create_url_locustfile.py \
-  --host http://localhost:8081 \
-  --users 50 \
-  --spawn-rate 5 \
-  --run-time 3m \
-  --headless \
-  --csv=results/app1-create
-```
-
-### Understand the Results
-Locust displays statistics while the test runs.
-
-- **Request count:** Total number of requests sent.
-- **Failures:** Number and percentage of failed requests.
-- **Median response time (p50):** Half of the requests completed within this time.
-- **95th percentile (p95):** 95% of requests completed within this time.
-- **Average response time:** Mean time taken per request.
-- **Requests per second (RPS):** Number of requests completed per second.
+### What I learned
+1. **Throughput increased with load:** In my tests through Nginx, the system handled about 152 RPS with 50 users and 564 RPS with 200 users.
+2. **Response times increased too:** As load increased, response times also increased. In the 200-user test, p95 was 130 ms, meaning 95% of requests completed within 130 ms.
+3. **Reliability:** Locust reported zero failed requests during these tests. But this does not guarantee reliability under all conditions.
+4. **Caching and load balancing:** The previous version without Redis and Nginx handled about 130 RPS. The new version, tested through Nginx with both Go instances, achieved about 550 RPS.
+5. **Limits of testing:** These tests show observed performance, not maximum capacity. The test mixed redirects, URL creation, and statistics requests, so 564 RPS does not mean 564 URL creations per second.
 
 ## 🎫 Ticket 14 — Unit Tests
 
 ### Goal
 Verify that individual functions and handlers behave correctly in isolation, without a real database or Redis.
 
-#### What is a unit test?
+### What is a unit test?
 A unit test checks one small piece of code — one function, one handler — in isolation. It does not need the whole system running. Fast, reliable, runs anywhere.
+
+### Run tests
+
+```bash
+go test ./...                    # run all tests
+go test ./... -v                 # verbose — see each test name
+go test ./... -cover             # show coverage percentage
+go test ./internal/service/...   # run only one package
+```
 
 ---
 
